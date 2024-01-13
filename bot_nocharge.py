@@ -5,17 +5,13 @@ import random
 import itertools
 from typing import Tuple
 from shooting import Shooting
-from math import degrees, atan2
+from math import degrees
 
 class Bot:
     def __init__(self):
         print("Initializing your super mega duper bot")
         self.crew_member_assigned_to_cannon: Tuple[CrewMember, TurretStation] = None
         self.crew_member_assigned_to_shield = None
-        self.crew_member_assigned_to_helm = None
-        self.is_ship_aligned = True
-        self.cannon_to_align = None
-
         self.current_index = 0  # To keep track of the current ship to be scanned
         self.all_ships_scanned_once = False  # Flag to indicate if all ships have been scanned once
         self.last_updated = 0;
@@ -66,7 +62,7 @@ class Bot:
         self.crew_member_assigned_to_cannon = crew_member_cannon
 
     def init_crew_member_assigned_to_shield(self, game_message):
-        if self.crew_member_assigned_to_shield is not None:
+        if self.crew_member_assigned_to_cannon is not None:
             return
         my_ship = game_message.ships.get(game_message.currentTeamId)
         crew = my_ship.crew
@@ -77,19 +73,6 @@ class Bot:
         crew_member_cannon = min(crew_member_cannon_product, key=lambda x: self.distance_from_station(*x))
 
         self.crew_member_assigned_to_shield = crew_member_cannon
-
-    def init_crew_member_assigned_to_helm(self, game_message):
-        if self.crew_member_assigned_to_helm is not None:
-            return
-        my_ship = game_message.ships.get(game_message.currentTeamId)
-        crew = my_ship.crew
-
-        shields = my_ship.stations.helms
-
-        crew_member_cannon_product = list(itertools.product(crew, shields))
-        crew_member_cannon = min(crew_member_cannon_product, key=lambda x: self.distance_from_station(*x))
-
-        self.crew_member_assigned_to_helm = crew_member_cannon
 
     def shoot_meteor(self, game_message):
         cannon = self.crew_member_assigned_to_cannon[1]
@@ -108,22 +91,6 @@ class Bot:
 
         #actions.append(TurretRotateAction(cannon.id, rotation_angle))
         #actions.append(TurretShootAction(cannon.id))
-    
-    def ship_alignement(self, game_message: GameMessage, adverse_ship_position: Vector):
-        if self.cannon_to_align is None:
-            return 0
-
-        relative_adverse_position = Vector(
-            adverse_ship_position.x - game_message.ships[game_message.currentTeamId].worldPosition.x,
-            adverse_ship_position.y - game_message.ships[game_message.currentTeamId].worldPosition.y,
-        )
-
-        relative_angle = atan2(relative_adverse_position.y, relative_adverse_position.x)
-
-        angle_to_move = degrees(relative_angle) - self.cannon_to_align.orientationDegrees
-
-        return angle_to_move
-
     def get_next_move(self, game_message: GameMessage):
         """
         Here is where the magic happens, for now the moves are not very good. I bet you can do better ;)
@@ -158,29 +125,13 @@ class Bot:
         #shield = [s for s in my_ship.stations.shields if s.id == shield_id][0]
         #if shield.operator is None:
         #    actions.append(CrewMoveAction(crewMemberId=crew[0].id, destination=shield.gridPosition))
-
-        self.init_crew_member_assigned_to_helm(game_message)
-        if absolute_angle := self.ship_alignement(game_message, game_message.shipsPositions[other_ships_ids[0]]):
-            print(absolute_angle)
-            print(self.crew_member_assigned_to_helm)
-            if self.crew_member_assigned_to_helm[0].currentStation != self.crew_member_assigned_to_helm[1].id:
-                actions.append(CrewMoveAction(self.crew_member_assigned_to_helm[0].id, self.crew_member_assigned_to_helm[1].gridPosition))
-            else:
-                print("aksdhaksjdhkasjhkjashd")
-                #actions.append(ShipLookAtAction(game_message.shipsPositions[other_ships_ids[0]]))
-                actions.append(ShipRotateAction(absolute_angle - my_ship.orientationDegrees))
-
+        
         occupied_turrets = []
         for crew_member in crew:
             if crew_member.id == self.crew_member_assigned_to_shield[0].id:
                 continue
-            if crew_member.id == self.crew_member_assigned_to_helm[0].id and self.ship_alignement(game_message, game_message.shipsPositions[other_ships_ids[0]]):
-                continue
-
-            if crew_member.currentStation is None or crew_member.currentStation in [h.id for h in my_ship.stations.helms]:
-                accessible_turrets = [t for t in crew_member.distanceFromStations.turrets+crew_member.distanceFromStations.shields if t.stationId not in occupied_turrets]
-                if not accessible_turrets:
-                    continue
+            if crew_member.currentStation is None:
+                accessible_turrets = [t for t in crew_member.distanceFromStations.turrets if t.stationId not in occupied_turrets]
                 turret = accessible_turrets[0]
                 turret = [t for t in my_ship.stations.turrets if turret.stationId == t.id][0]
 
@@ -194,17 +145,18 @@ class Bot:
                     # actions.append(TurretRotateAction(turret.id, -turret.orientationDegrees+my_ship.orientationDegrees))
                     actions.append((TurretLookAtAction(turret.id ,game_message.shipsPositions[other_ships_ids[0]])))
 
-                if turret.turretType == TurretType.EMP and turret.charge < game_message.constants.ship.stations.turretInfos[turret.turretType].maxCharge - game_message.constants.ship.stations.turretInfos[turret.turretType].rocketChargeCost:
+                if turret.turretType == TurretType.EMP and turret.charge < game_message.constants.ship.stations.turretInfos[TurretType.EMP].maxCharge - game_message.constants.ship.stations.turretInfos[TurretType.EMP].rocketChargeCost:
                     actions.append(TurretChargeAction(turret.id))
                 else:
                     actions.append(TurretShootAction(turret.id))
-            if self.cannon_to_align is None:
-                if cannon_to_align := [s for s in my_ship.stations.turrets+my_ship.stations.shields if occupied_turrets[-1] == s.id and s.turretType not in [TurretType.Normal, TurretType.EMP]]:
-                    self.cannon_to_align = cannon_to_align[0]
 
 
-        #turrets = my_ship.stations.turrets
-        #print([turret.turretType for turret in turrets])
+                #actions.append(TurretShootAction(crew_member.currentStation))
+        
+
+
+        turrets = my_ship.stations.turrets
+        print([turret.turretType for turret in turrets])
 
         #self.init_crew_member_assigned_to_cannon(game_message)
 
@@ -216,8 +168,8 @@ class Bot:
 
 
         # You can clearly do better than the random actions above! Have fun!
-        #print(game_message.constants.ship.stations.turretInfos)
-        #print(game_message.shipsPositions.get(other_ships_ids[0]))
+        print(game_message.constants.ship.stations.turretInfos)
+        print(game_message.shipsPositions.get(other_ships_ids[0]))
         print(actions)
 
         return actions
