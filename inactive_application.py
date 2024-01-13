@@ -5,7 +5,6 @@ import dataclasses
 import json
 import os
 import traceback
-
 import cattrs
 import websockets
 
@@ -55,7 +54,7 @@ async def game_loop(websocket: websockets.WebSocketServerProtocol, bot: Bot):
             "actions": [dataclasses.asdict(action) for action in actions]
         }
 
-        print(json.dumps(payload))
+        #print(json.dumps(payload))
 
         await websocket.send(json.dumps(payload))
 
