@@ -42,7 +42,6 @@ async def game_loop(websocket: websockets.WebSocketServerProtocol, bot: Bot):
             print(f'Errors during last tick : {game_message.lastTickErrors}')
 
         actions = []
-        
         # Just so your bot doesn't completely crash. ;)
         try:
             actions = bot.get_next_move(game_message)
