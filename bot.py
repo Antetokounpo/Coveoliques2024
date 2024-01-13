@@ -87,25 +87,40 @@ class Bot:
         my_ship = game_message.ships.get(team_id)
         other_ships_ids = [shipId for shipId in game_message.shipsPositions.keys() if shipId != team_id]
 
+
+        print(other_ships_ids)
         crew = my_ship.crew
 
-        helm_id = crew[0].distanceFromStations.helms[0].stationId
-        helm = [s for s in my_ship.stations.helms if s.id == helm_id][0]
-        if helm.operator is None:
-            actions.append(CrewMoveAction(crewMemberId=crew[0].id, destination=helm.gridPosition))
-        else:
-            other_ships = [s for s in game_message.ships.values() if s.teamId != team_id and s.currentHealth]
-            actions.append(ShipLookAtAction(other_ships[0].worldPosition))
+        #helm_id = crew[0].distanceFromStations.helms[0].stationId
+        #helm = [s for s in my_ship.stations.helms if s.id == helm_id][0]
+        #if helm.operator is None:
+        #    actions.append(CrewMoveAction(crewMemberId=crew[0].id, destination=helm.gridPosition))
+        #else:
+        #    #other_ships = [s for s in game_message.ships.values() if (s.teamId != team_id)]
+        #    print(game_message.shipsPositions[other_ships_ids[0]])
+        #    print(my_ship.worldPosition)
+        #    print(my_ship.orientationDegrees)
+        #    actions.append(ShipLookAtAction(game_message.shipsPositions[other_ships_ids[0]]))
+        #    #actions.append(ShipLookAtAction(Vector(0, 0)))
 
-
+        shield_id = crew[1].distanceFromStations.shields[0].stationId
+        shield = [s for s in my_ship.stations.shields if s.id == shield_id][0]
+        if shield.operator is None:
+            actions.append(CrewMoveAction(crewMemberId=crew[1].id, destination=shield.gridPosition))
+        
         occupied_turrets = []
         for crew_member in crew[1:]:
-            accessible_turrets = [t for t in crew_member.distanceFromStations.turrets if t.stationId not in occupied_turrets]
-            turret = accessible_turrets[0]
-            turret = [t for t in my_ship.stations.turrets if turret.stationId == t.id][0]
+            if crew_member.currentStation is None:
+                accessible_turrets = [t for t in crew_member.distanceFromStations.turrets if t.stationId not in occupied_turrets][::-1]
+                turret = accessible_turrets[0]
+                turret = [t for t in my_ship.stations.turrets if turret.stationId == t.id][0]
 
-            actions.append(CrewMoveAction(crewMemberId=crew_member.id, destination=turret.gridPosition))
-            occupied_turrets.append(turret.id)
+                actions.append(CrewMoveAction(crewMemberId=crew_member.id, destination=turret.gridPosition))
+                occupied_turrets.append(turret.id)
+            else:
+                occupied_turrets.append(crew_member.currentStation)
+                actions.append(TurretShootAction(crew_member.currentStation))
+        
 
 
         turrets = my_ship.stations.turrets
