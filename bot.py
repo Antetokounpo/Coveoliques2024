@@ -11,6 +11,7 @@ class Bot:
     def __init__(self):
         print("Initializing your super mega duper bot")
         self.crew_member_assigned_to_cannon: Tuple[CrewMember, TurretStation] = None
+        self.crew_member_assigned_to_shield = None
         self.current_index = 0  # To keep track of the current ship to be scanned
         self.all_ships_scanned_once = False  # Flag to indicate if all ships have been scanned once
         self.last_updated = 0;
@@ -60,6 +61,19 @@ class Bot:
 
         self.crew_member_assigned_to_cannon = crew_member_cannon
 
+    def init_crew_member_assigned_to_shield(self, game_message):
+        if self.crew_member_assigned_to_cannon is not None:
+            return
+        my_ship = game_message.ships.get(game_message.currentTeamId)
+        crew = my_ship.crew
+
+        shields = my_ship.stations.shields
+
+        crew_member_cannon_product = list(itertools.product(crew, shields))
+        crew_member_cannon = min(crew_member_cannon_product, key=lambda x: self.distance_from_station(*x))
+
+        self.crew_member_assigned_to_shield = crew_member_cannon
+
     def shoot_meteor(self, game_message):
         cannon = self.crew_member_assigned_to_cannon[1]
         cannon_position = cannon.worldPosition
@@ -103,13 +117,19 @@ class Bot:
         #    actions.append(ShipLookAtAction(game_message.shipsPositions[other_ships_ids[0]]))
         #    #actions.append(ShipLookAtAction(Vector(0, 0)))
 
-        shield_id = crew[1].distanceFromStations.shields[0].stationId
-        shield = [s for s in my_ship.stations.shields if s.id == shield_id][0]
-        if shield.operator is None:
-            actions.append(CrewMoveAction(crewMemberId=crew[1].id, destination=shield.gridPosition))
+        self.init_crew_member_assigned_to_shield(game_message)
+        if self.crew_member_assigned_to_shield[1].operator is None:
+            actions.append(CrewMoveAction(crewMemberId=self.crew_member_assigned_to_shield[0].id, destination=self.crew_member_assigned_to_shield[1].gridPosition))
+
+        #shield_id = crew[0].distanceFromStations.shields[0].stationId
+        #shield = [s for s in my_ship.stations.shields if s.id == shield_id][0]
+        #if shield.operator is None:
+        #    actions.append(CrewMoveAction(crewMemberId=crew[0].id, destination=shield.gridPosition))
         
         occupied_turrets = []
-        for crew_member in crew[1:]:
+        for crew_member in crew:
+            if crew_member.id == self.crew_member_assigned_to_shield[0].id:
+                continue
             if crew_member.currentStation is None:
                 accessible_turrets = [t for t in crew_member.distanceFromStations.turrets if t.stationId not in occupied_turrets][::-1]
                 turret = accessible_turrets[0]
@@ -119,6 +139,11 @@ class Bot:
                 occupied_turrets.append(turret.id)
             else:
                 occupied_turrets.append(crew_member.currentStation)
+                turret = [t for t in my_ship.stations.turrets if t.id == crew_member.currentStation][0]
+
+                if turret.turretType in [TurretType.Normal, TurretType.EMP]:
+                    actions.append(TurretRotateAction(turret.id, -turret.orientationDegrees+my_ship.orientationDegrees))
+
                 actions.append(TurretShootAction(crew_member.currentStation))
         
 
