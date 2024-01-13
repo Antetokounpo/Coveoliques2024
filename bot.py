@@ -6,7 +6,7 @@ import random
 class Bot:
     def __init__(self):
         print("Initializing your super mega duper bot")
-        self.radarModule = RadarModule()
+
 
     def _assign_to_turret(self,crewmate,turret):
         pass
@@ -59,6 +59,7 @@ class Bot:
 
         self.radarModule.last_updated += 1
         # You can clearly do better than the random actions above! Have fun!
+        print(game_message.constants.ship.stations.turretInfos)
         print(game_message.shipsPositions.get(other_ships_ids[0]))
         return actions
 if __name__ == "__main__":
