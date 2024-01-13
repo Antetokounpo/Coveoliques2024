@@ -1,3 +1,4 @@
+from JohoButai import RadarModule
 from game_message import *
 from actions import *
 import random
@@ -5,6 +6,7 @@ import random
 class Bot:
     def __init__(self):
         print("Initializing your super mega duper bot")
+        self.radarModule = RadarModule()
 
     def _assign_to_turret(self,crewmate,turret):
         pass
@@ -55,6 +57,7 @@ class Bot:
         for radar_station in operatedRadarStation:
             actions.append(RadarScanAction(radar_station.id, random.choice(other_ships_ids)))
 
+        self.radarModule.last_updated += 1
         # You can clearly do better than the random actions above! Have fun!
         print(game_message.shipsPositions.get(other_ships_ids[0]))
         return actions

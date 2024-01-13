@@ -8,6 +8,7 @@ class RadarModule:
         self.enemy_ships_info = {ship_id: [None, 0] for ship_id in self.other_ships_ids}
         self.current_index = 0  # To keep track of the current ship to be scanned
         self.all_ships_scanned_once = False  # Flag to indicate if all ships have been scanned once
+        self.last_updated = 0;
 
     def get_next_ship_to_scan(self):
         if self.all_ships_scanned_once:
@@ -19,6 +20,7 @@ class RadarModule:
         if self.current_index >= len(self.other_ships_ids):
             self.current_index = 0  # Reset index
             self.all_ships_scanned_once = True  # Set flag to True after one full cycle
+            self.last_updated = 0
 
         return ship_id_to_scan
 
