@@ -142,7 +142,8 @@ class Bot:
                 turret = [t for t in my_ship.stations.turrets if t.id == crew_member.currentStation][0]
 
                 if turret.turretType in [TurretType.Normal, TurretType.EMP]:
-                    actions.append(TurretRotateAction(turret.id, -turret.orientationDegrees+my_ship.orientationDegrees))
+                    # actions.append(TurretRotateAction(turret.id, -turret.orientationDegrees+my_ship.orientationDegrees))
+                    actions.append((TurretLookAtAction(game_message.shipsPositions[other_ships_ids[0]])))
 
                 actions.append(TurretShootAction(crew_member.currentStation))
         
