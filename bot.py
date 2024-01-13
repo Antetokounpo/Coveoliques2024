@@ -2,14 +2,56 @@ from JohoButai import RadarModule
 from game_message import *
 from actions import *
 import random
+import itertools
+from typing import Tuple
+from shooting import Shooting
+from math import degrees
 
 class Bot:
     def __init__(self):
         print("Initializing your super mega duper bot")
+        self.crew_member_assigned_to_cannon: Tuple[CrewMember, TurretStation] = None
 
+    def distance_from_station(self, crew_member: CrewMember, station: Station) -> float:
+        distances_from_stations = crew_member.distanceFromStations
+        all_distances_from_stations = distances_from_stations.turrets + distances_from_stations.shields + distances_from_stations.radars + distances_from_stations.helms
 
-    def _assign_to_turret(self,crewmate,turret):
-        pass
+        # distance from the selected station
+        distance = [s for s in all_distances_from_stations if s.stationId == station.id]
+
+        return distance[0].distance if distance else 99999
+
+    def init_crew_member_assigned_to_cannon(self, game_message):
+        if self.crew_member_assigned_to_cannon is not None:
+            return
+        my_ship = game_message.ships.get(game_message.currentTeamId)
+        crew = my_ship.crew
+
+        turrets = my_ship.stations.turrets
+        normal_cannons = [t for t in turrets if t.turretType == TurretType.Normal]
+
+        crew_member_cannon_product = list(itertools.product(crew, normal_cannons))
+        crew_member_cannon = min(crew_member_cannon_product, key=lambda x: self.distance_from_station(*x))
+
+        self.crew_member_assigned_to_cannon = crew_member_cannon
+
+    def shoot_meteor(self, game_message):
+        cannon = self.crew_member_assigned_to_cannon[1]
+        cannon_position = cannon.worldPosition
+        cannon_position = Vector(cannon_position.x, cannon_position.y)
+        rocket_speed = game_message.constants.ship.stations.turretInfos[TurretType.Normal].rocketSpeed
+
+        meteors = game_message.debris
+        print(meteors)
+
+        meteor_position = Vector(meteors[0].position.x, meteors[0].position.y)
+        meteor_velocity = Vector(meteors[0].velocity.x, meteors[0].velocity.y)
+
+        shooting_angle = -Shooting().get_shooting_angle(cannon_position, rocket_speed, meteor_position, meteor_velocity)
+        rotation_angle = degrees(shooting_angle)-cannon.orientationDegrees
+
+        #actions.append(TurretRotateAction(cannon.id, rotation_angle))
+        #actions.append(TurretShootAction(cannon.id))
     def get_next_move(self, game_message: GameMessage):
         """
         Here is where the magic happens, for now the moves are not very good. I bet you can do better ;)
@@ -20,42 +62,38 @@ class Bot:
         my_ship = game_message.ships.get(team_id)
         other_ships_ids = [shipId for shipId in game_message.shipsPositions.keys() if shipId != team_id]
 
-        # Find who's not doing anything and try to give them a job?
-        idle_crewmates = [crewmate for crewmate in my_ship.crew if crewmate.currentStation is None and crewmate.destination is None]
+        crew = my_ship.crew
 
-        for crewmate in idle_crewmates:
-            visitable_stations = crewmate.distanceFromStations.shields + crewmate.distanceFromStations.turrets + crewmate.distanceFromStations.helms + crewmate.distanceFromStations.radars
-            station_to_move_to = random.choice(visitable_stations)
-            actions.append(CrewMoveAction(crewmate.id, station_to_move_to.stationPosition))
+        helm_id = crew[0].distanceFromStations.helms[0].stationId
+        helm = [s for s in my_ship.stations.helms if s.id == helm_id][0]
+        if helm.operator is None:
+            actions.append(CrewMoveAction(crewMemberId=crew[0].id, destination=helm.gridPosition))
+        else:
+            other_ships = [s for s in game_message.ships.values() if s.teamId != team_id and s.currentHealth]
+            actions.append(ShipLookAtAction(other_ships[0].worldPosition))
 
-        # Now crew members at stations should do something!
-        operatedTurretStations = [station for station in my_ship.stations.turrets if station.operator is not None]
-        for turret_station in operatedTurretStations:
-            possible_actions = [
-                # Charge the turret.
-                TurretChargeAction(turret_station.id),
-                # Aim the turret itself.
-                TurretLookAtAction(turret_station.id, 
-                                   Vector(random.uniform(0, game_message.constants.world.width), random.uniform(0, game_message.constants.world.height))
-                ),
-                # Shoot!
-                TurretShootAction(turret_station.id)
-            ]
-            """ 
-            Tourner le vaisseau vers un autre vaisseau -> eventuellement, viser le plus faible 
-            mettre tout le monde sur les tourelles
-            tirer a bout portant
-            """
-            actions.append(random.choice(possible_actions))
 
-        operatedHelmStation = [station for station in my_ship.stations.helms if station.operator is not None]
-        my_target_angle = 0
-        if operatedHelmStation:
-            actions.append(ShipRotateAction(my_target_angle))
+        occupied_turrets = []
+        for crew_member in crew[1:]:
+            accessible_turrets = [t for t in crew_member.distanceFromStations.turrets if t.stationId not in occupied_turrets]
+            turret = accessible_turrets[0]
+            turret = [t for t in my_ship.stations.turrets if turret.stationId == t.id][0]
 
-        operatedRadarStation = [station for station in my_ship.stations.radars if station.operator is not None]
-        for radar_station in operatedRadarStation:
-            actions.append(RadarScanAction(radar_station.id, random.choice(other_ships_ids)))
+            actions.append(CrewMoveAction(crewMemberId=crew_member.id, destination=turret.gridPosition))
+            occupied_turrets.append(turret.id)
+
+
+        turrets = my_ship.stations.turrets
+        print([turret.turretType for turret in turrets])
+
+        #self.init_crew_member_assigned_to_cannon(game_message)
+
+        # Move the cannon operator to the cannon
+        #if self.crew_member_assigned_to_cannon[1].operator is None:
+        #    actions.append(CrewMoveAction(crewMemberId=self.crew_member_assigned_to_cannon[0].id, destination=self.crew_member_assigned_to_cannon[1].gridPosition))
+
+
+
 
         # You can clearly do better than the random actions above! Have fun!
         print(game_message.constants.ship.stations.turretInfos)

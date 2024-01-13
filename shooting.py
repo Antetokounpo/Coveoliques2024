@@ -30,7 +30,7 @@ class Shooting:
         shooting_angle = np.arcsin(meteor_vel.y/rocket_speed)
 
         t = (-meteor_pos.x)/(meteor_vel.x - rocket_speed*np.cos(shooting_angle))
-        self.show_position_at_time(cannon_position, rocket_speed, shooting_angle, meteor_position, meteor_velocity, t)
+        #self.show_position_at_time(cannon_position, rocket_speed, shooting_angle, meteor_position, meteor_velocity, t)
 
         return shooting_angle+angle_with_x_axis
 
