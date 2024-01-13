@@ -10,7 +10,7 @@ from math import degrees
 class Bot:
     def __init__(self):
         print("Initializing your super mega duper bot")
-        self.crew_member_assigned_to_cannon: Tuple[CrewMember, TurretStation] =
+        self.crew_member_assigned_to_cannon: Tuple[CrewMember, TurretStation] = None
         self.current_index = 0  # To keep track of the current ship to be scanned
         self.all_ships_scanned_once = False  # Flag to indicate if all ships have been scanned once
         self.last_updated = 0;
@@ -26,11 +26,10 @@ class Bot:
 
     def scan_ships(self, game_message: GameMessage):
         other_ships_ids = [shipId for shipId in game_message.shipsPositions.keys() if shipId != game_message.currentTeamId]
-        enemy_ships_info = {ship_id: [None, 0] for ship_id in self.other_ships_ids}
         if self.all_ships_scanned_once:
             return None  # Return None if all ships have been scanned once
 
-        ship_id_to_scan = self.other_ships_ids[self.current_index]
+        ship_id_to_scan = other_ships_ids[self.current_index]
         self.current_index += 1
 
         if self.current_index >= len(self.other_ships_ids):
