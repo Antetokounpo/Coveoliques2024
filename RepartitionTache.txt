@@ -1,0 +1,3 @@
+- Reid: Clearer les météores avec les guns
+- Alex: Faire le scanner pour avoir les infos sur l'autre vaisseau
+- Veillette: test combo d'arme avec le bot inactif
