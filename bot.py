@@ -139,7 +139,3 @@ class Bot:
         print(game_message.constants.ship.stations.turretInfos)
         print(game_message.shipsPositions.get(other_ships_ids[0]))
         return actions
-
-
-if __name__ == "__main__":
-    print(game_message.shipsPositions)
