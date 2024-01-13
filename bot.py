@@ -6,7 +6,8 @@ class Bot:
     def __init__(self):
         print("Initializing your super mega duper bot")
 
-
+    def _assign_to_turret(self,crewmate,turret):
+        pass
     def get_next_move(self, game_message: GameMessage):
         """
         Here is where the magic happens, for now the moves are not very good. I bet you can do better ;)
@@ -38,16 +39,24 @@ class Bot:
                 # Shoot!
                 TurretShootAction(turret_station.id)
             ]
-
+            """ 
+            Tourner le vaisseau vers un autre vaisseau -> eventuellement, viser le plus faible 
+            mettre tout le monde sur les tourelles
+            tirer a bout portant
+            """
             actions.append(random.choice(possible_actions))
 
         operatedHelmStation = [station for station in my_ship.stations.helms if station.operator is not None]
+        my_target_angle = 0
         if operatedHelmStation:
-            actions.append(ShipRotateAction(random.uniform(0, 360)))
+            actions.append(ShipRotateAction(my_target_angle))
 
         operatedRadarStation = [station for station in my_ship.stations.radars if station.operator is not None]
         for radar_station in operatedRadarStation:
             actions.append(RadarScanAction(radar_station.id, random.choice(other_ships_ids)))
 
         # You can clearly do better than the random actions above! Have fun!
+        print(game_message.shipsPositions.get(other_ships_ids[0]))
         return actions
+if __name__ == "__main__":
+    print(game_message.shipsPositions)
