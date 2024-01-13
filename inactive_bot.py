@@ -52,5 +52,5 @@ class Bot:
             actions.append(RadarScanAction(radar_station.id, random.choice(other_ships_ids)))
 
         # You can clearly do better than the random actions above! Have fun!
-        return actions
+        return []
 

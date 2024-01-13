@@ -9,7 +9,7 @@ import traceback
 import cattrs
 import websockets
 
-from incative_bot import Bot
+from bot import Bot
 from game_message import GameMessage
 
 

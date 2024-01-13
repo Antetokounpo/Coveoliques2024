@@ -9,7 +9,7 @@ import traceback
 import cattrs
 import websockets
 
-from bot import Bot
+from inactive_bot import Bot
 from game_message import GameMessage
 
 
@@ -21,7 +21,7 @@ async def run():
         if "TOKEN" in os.environ:
             await websocket.send(json.dumps({"type": "REGISTER", "token": os.environ["TOKEN"]}))
         else:
-            await websocket.send(json.dumps({"type": "REGISTER", "teamName": "MyPythonicBot"}))
+            await websocket.send(json.dumps({"type": "REGISTER", "teamName": "InactiveBot"}))
 
         await game_loop(websocket=websocket, bot=bot)
 
