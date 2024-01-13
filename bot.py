@@ -57,7 +57,6 @@ class Bot:
         for radar_station in operatedRadarStation:
             actions.append(RadarScanAction(radar_station.id, random.choice(other_ships_ids)))
 
-        self.radarModule.last_updated += 1
         # You can clearly do better than the random actions above! Have fun!
         print(game_message.constants.ship.stations.turretInfos)
         print(game_message.shipsPositions.get(other_ships_ids[0]))
